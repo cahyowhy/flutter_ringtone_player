@@ -66,15 +66,16 @@ public class FlutterRingtonePlayerPlugin implements MethodCallHandler {
                 result.success(null);
                 return;
             }
-
+            
+            boolean fromRes = false;
             if (call.method.equals("play")) {
                 final int kind = call.argument("android");
                 if (call.hasArgument("fromRes")) {
-                    final boolean fromRes = call.argument("fromRes");
+                    fromRes = call.argument("fromRes");
+                }
 
-                    if (fromRes) {
-                        ringtoneUri = resourceToUri(context, kind);
-                    }
+                if (fromRes) {
+                    ringtoneUri = resourceToUri(context, kind);
                 } else {
                     switch (kind) {
                         case 1:
