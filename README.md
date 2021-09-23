@@ -26,18 +26,18 @@ FlutterRingtonePlayer.play(
   ios: IosSounds.glass,
   looping: true, // Android only - API >= 28
   volume: 0.1, // Android only - API >= 28
-  asAlarm: false, // Android only - all APIs
+  streamType: 4, // Android only - all APIs
 );
 
 ```
 
 ### .play*() optional attributes
 
-| Attribute       |  Description |
-| --------------  | ------------ |
-| `bool` looping  | Enables looping of ringtone. Requires `FlutterRingtonePlayer.stop();` to stop ringing. |
-| `double` volume | Sets ringtone volume in range 0 to 1.0. |
-| `bool` asAlarm  | Allows to ignore device's silent/vibration mode and play given sound anyway. |
+| Attribute         |  Description |
+| ----------------- | ------------ |
+| `bool` looping    | Enables looping of ringtone. Requires `FlutterRingtonePlayer.stop();` to stop ringing. |
+| `double` volume   | Sets ringtone volume in range 0 to 1.0. |
+| `int` streamType  | Allows set stream type. and may ignore silent mode. [Context](https://developer.android.com/reference/android/media/AudioManager#STREAM_NOTIFICATION) |
 
 
 To stop looped ringtone please use:

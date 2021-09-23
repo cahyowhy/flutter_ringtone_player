@@ -1,5 +1,6 @@
 package io.inway.ringtone.player;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.Ringtone;
@@ -7,6 +8,10 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -36,6 +41,13 @@ public class FlutterRingtonePlayerPlugin implements MethodCallHandler {
         channel.setMethodCallHandler(new FlutterRingtonePlayerPlugin(registrar.context()));
     }
 
+    public Uri resourceToUri(Context context, int resID) {
+        return Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
+                context.getResources().getResourcePackageName(resID) + '/' +
+                context.getResources().getResourceTypeName(resID) + '/' +
+                context.getResources().getResourceEntryName(resID));
+    }
+
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         try {
@@ -43,28 +55,42 @@ public class FlutterRingtonePlayerPlugin implements MethodCallHandler {
 
             if (call.method.equals("play") && !call.hasArgument("android")) {
                 result.notImplemented();
-            } else if (call.method.equals("play")) {
-                final int kind = call.argument("android");
+                return;
+            }
 
-                switch (kind) {
-                    case 1:
-                        ringtoneUri = Settings.System.DEFAULT_ALARM_ALERT_URI;
-                        break;
-                    case 2:
-                        ringtoneUri = Settings.System.DEFAULT_NOTIFICATION_URI;
-                        break;
-                    case 3:
-                        ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI;
-                        break;
-                    default:
-                        result.notImplemented();
-                }
-            } else if (call.method.equals("stop")) {
+            if (call.method.equals("stop")) {
                 if (ringtone != null) {
                     ringtone.stop();
                 }
 
                 result.success(null);
+                return;
+            }
+
+            if (call.method.equals("play")) {
+                final int kind = call.argument("android");
+                if (call.hasArgument("fromRes")) {
+                    final boolean fromRes = call.argument("fromRes");
+
+                    if (fromRes) {
+                        ringtoneUri = resourceToUri(context, kind);
+                    }
+                } else {
+                    switch (kind) {
+                        case 1:
+                            ringtoneUri = Settings.System.DEFAULT_ALARM_ALERT_URI;
+                            break;
+                        case 2:
+                            ringtoneUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+                            break;
+                        case 3:
+                            ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI;
+                            break;
+                        default:
+                            result.notImplemented();
+                            return;
+                    }
+                }
             }
 
             if (ringtoneUri != null) {
@@ -87,22 +113,30 @@ public class FlutterRingtonePlayerPlugin implements MethodCallHandler {
                     }
                 }
 
-                if (call.hasArgument("asAlarm")) {
-                    final boolean asAlarm = call.argument("asAlarm");
-                    /* There's also a .setAudioAttributes method
-                       that is more flexible, but .setStreamType
-                       is supported in all Android versions
-                       whereas .setAudioAttributes needs SDK > 21.
-                       More on that at
-                       https://developer.android.com/reference/android/media/Ringtone
-                    */
-                    if (asAlarm) {
-                        ringtone.setStreamType(AudioManager.STREAM_ALARM);
+                if (call.hasArgument("streamType")) {
+                    final int streamType = call.argument("streamType");
+                    List<Integer> availableStream = Arrays.asList(
+                            AudioManager.STREAM_ALARM,
+                            AudioManager.STREAM_ACCESSIBILITY,
+                            AudioManager.STREAM_ALARM,
+                            AudioManager.STREAM_DTMF,
+                            AudioManager.STREAM_MUSIC,
+                            AudioManager.STREAM_NOTIFICATION,
+                            AudioManager.STREAM_RING,
+                            AudioManager.STREAM_SYSTEM,
+                            AudioManager.STREAM_VOICE_CALL
+                    );
+                    boolean hasStream = availableStream.contains(streamType);
+                    if (!hasStream) {
+                        result.error("Exception", "Invalid streamType", null);
+                        return;
                     }
+
+                    ringtone.setStreamType(streamType);
                 }
 
-                ringtone.play();
 
+                ringtone.play();
                 result.success(null);
             }
         } catch (Exception e) {

@@ -23,7 +23,7 @@ class FlutterRingtonePlayer {
   /// This is generic method allowing you to specify individual sounds
   /// you wish to be played for each platform
   ///
-  /// [asAlarm] is an Android only flag that lets play given sound
+  /// [streamType] is an Android ringtone manager stream type
   /// as an alarm, that is, phone will make sound even if
   /// it is in silent or vibration mode.
   ///
@@ -35,15 +35,48 @@ class FlutterRingtonePlayer {
       required IosSound ios,
       double? volume,
       bool? looping,
-      bool? asAlarm}) async {
+      bool? fromRes,
+      int? streamType}) async {
     try {
       var args = <String, dynamic>{
         'android': android.value,
         'ios': ios.value,
       };
       if (looping != null) args['looping'] = looping;
+      if (fromRes != null) args['fromRes'] = fromRes;
       if (volume != null) args['volume'] = volume;
-      if (asAlarm != null) args['asAlarm'] = asAlarm;
+      if (streamType != null) args['streamType'] = streamType;
+
+      _channel.invokeMethod('play', args);
+    } on PlatformException {}
+  }
+
+  /// This is method allowing you to specify android and uri as resID int
+  /// even thou this doesn't work on IOS but fuck. just sent it
+  ///
+  /// [streamType] is an Android ringtone manager stream type
+  /// as an alarm, that is, phone will make sound even if
+  /// it is in silent or vibration mode.
+  ///
+  /// See also:
+  ///  * [AndroidSounds]
+  ///  * [IosSounds]
+  static Future<void> playURI(
+      {required int android,
+      required int ios,
+      double? volume,
+      bool? looping,
+      bool? fromRes,
+      int? streamType}) async {
+    try {
+      var args = <String, dynamic>{
+        'android': android,
+        'ios': ios,
+      };
+      if (looping != null) args['looping'] = looping;
+      if (fromRes != null) args['fromRes'] = fromRes;
+      if (volume != null) args['volume'] = volume;
+      if (streamType != null) args['streamType'] = streamType;
 
       _channel.invokeMethod('play', args);
     } on PlatformException {}
@@ -51,33 +84,33 @@ class FlutterRingtonePlayer {
 
   /// Play default alarm sound (looping on Android)
   static Future<void> playAlarm(
-          {double? volume, bool looping = true, bool asAlarm = true}) async =>
+          {double? volume, bool looping = true, int streamType = 4}) async =>
       play(
           android: AndroidSounds.alarm,
           ios: IosSounds.alarm,
           volume: volume,
           looping: looping,
-          asAlarm: asAlarm);
+          streamType: streamType);
 
   /// Play default notification sound
   static Future<void> playNotification(
-          {double? volume, bool? looping, bool asAlarm = false}) async =>
+          {double? volume, bool? looping, int streamType = 5}) async =>
       play(
           android: AndroidSounds.notification,
           ios: IosSounds.triTone,
           volume: volume,
           looping: looping,
-          asAlarm: asAlarm);
+          streamType: streamType);
 
   /// Play default system ringtone (looping on Android)
   static Future<void> playRingtone(
-          {double? volume, bool looping = true, bool asAlarm = false}) async =>
+          {double? volume, bool looping = true, int streamType = 2}) async =>
       play(
           android: AndroidSounds.ringtone,
           ios: IosSounds.electronic,
           volume: volume,
           looping: looping,
-          asAlarm: asAlarm);
+          streamType: streamType);
 
   /// Stop looping sounds like alarms & ringtones on Android.
   /// This is no-op on iOS.
