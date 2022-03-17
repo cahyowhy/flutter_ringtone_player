@@ -9,10 +9,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 
+import androidx.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -22,23 +25,39 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 /**
  * FlutterRingtonePlayerPlugin
  */
-public class FlutterRingtonePlayerPlugin implements MethodCallHandler {
-    private final Context context;
-    private final RingtoneManager ringtoneManager;
+public class FlutterRingtonePlayerPlugin implements MethodCallHandler, FlutterPlugin {
+    private Context context;
+    private MethodChannel methodChannel;
+    private RingtoneManager ringtoneManager;
     private Ringtone ringtone;
-
-    public FlutterRingtonePlayerPlugin(Context context) {
-        this.context = context;
-        this.ringtoneManager = new RingtoneManager(context);
-        this.ringtoneManager.setStopPreviousRingtone(true);
-    }
 
     /**
      * Plugin registration.
      */
+    @SuppressWarnings("deprecation")
     public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_ringtone_player");
-        channel.setMethodCallHandler(new FlutterRingtonePlayerPlugin(registrar.context()));
+        new FlutterRingtonePlayerPlugin().onAttachedToEngine(registrar.context(), registrar.messenger());
+    }
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
+    }
+
+    private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
+        this.context = applicationContext;
+        this.ringtoneManager = new RingtoneManager(context);
+        this.ringtoneManager.setStopPreviousRingtone(true);
+
+        methodChannel = new MethodChannel(messenger, "flutter_ringtone_player");
+        methodChannel.setMethodCallHandler(this);
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        context = null;
+        methodChannel.setMethodCallHandler(null);
+        methodChannel = null;
     }
 
     public Uri resourceToUri(Context context, int resID) {
@@ -49,7 +68,7 @@ public class FlutterRingtonePlayerPlugin implements MethodCallHandler {
     }
 
     @Override
-    public void onMethodCall(MethodCall call, Result result) {
+    public void onMethodCall(@NonNull MethodCall call,@NonNull Result result) {
         try {
             Uri ringtoneUri = null;
 
